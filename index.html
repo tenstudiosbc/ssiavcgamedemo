@@ -23,60 +23,50 @@
                 return params.get('code');
             }
 
-            // Initialize Discord after SDK is ready
-            async function startDiscord() {
+            // Detect if we're in Discord Activity context
+            function isDiscordActivity() {
+                return typeof window.discord !== 'undefined' && window.discordSdk === undefined;
+            }
+
+            // Initialize Discord (non-blocking, works in both Discord Activity and normal browser)
+            async function initializeDiscord() {
                 try {
                     const authCode = getAuthorizationCode();
                     
                     // If we have an auth code, clean the URL immediately
                     if (authCode) {
-                        // Store the code and clean URL before doing anything else
                         localStorage.setItem('discord_auth_code', authCode);
                         window.history.replaceState({}, document.title, DISCORD_REDIRECT_URI);
+                        console.log("Discord authorization stored");
                     }
                     
-                    // Wait for the discord object to be available
-                    let attempts = 0;
-                    const maxAttempts = 15;
-                    
-                    while (typeof window.discord === 'undefined' && attempts < maxAttempts) {
-                        console.log("Waiting for Discord SDK to initialize...");
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-
-                    if (typeof window.discord === 'undefined') {
-                        console.warn("Discord SDK object not available after retries");
-                        return;
-                    }
-                    
-                    // Initialize using the global 'discord' object
-                    const discordSdk = new window.discord.DiscordSDK(DISCORD_CLIENT_ID);
-                    
-                    if (authCode) {
-                        // User is authorized, initialize and proceed to game
-                        console.log("User authorized with Discord");
+                    // Check if Discord SDK is available
+                    if (typeof window.discord !== 'undefined') {
+                        const discordSdk = new window.discord.DiscordSDK(DISCORD_CLIENT_ID);
+                        
+                        // For Discord Activity context
+                        if (isDiscordActivity()) {
+                            console.log("Running in Discord Activity context");
+                        } else {
+                            console.log("Running in normal browser context");
+                        }
+                        
                         await discordSdk.ready();
                         console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
-                        // Game will now load normally from the cleaned URL
+                        window.discordSdk = discordSdk;
                     } else {
-                        // No auth code, redirect to Discord authorization
-                        console.log("No authorization found. Redirecting to Discord authorization...");
-                        const authUrl = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&scope=${DISCORD_SCOPES.join('+')}`;
-                        window.location.href = authUrl;
+                        console.log("Discord SDK not available - running in normal browser mode");
                     }
-                    
                 } catch (error) {
-                    console.error("Discord initialization error:", error);
+                    console.warn("Discord initialization warning:", error.message);
+                    // Continue anyway - don't block the game
                 }
             }
 
-            // Start Discord initialization when DOM is ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', startDiscord);
-            } else {
-                startDiscord();
-            }
+            // Initialize Discord after a short delay (non-blocking for game)
+            setTimeout(() => {
+                initializeDiscord();
+            }, 1000);
         </script>
 
         <title>SSIA: Vanguard Chronicles</title>
