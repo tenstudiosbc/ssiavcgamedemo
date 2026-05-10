@@ -15,8 +15,8 @@
             // Discord OAuth Configuration
             const DISCORD_CLIENT_ID = "1451436398241513553";
             const DISCORD_REDIRECT_URI = "https://gamessiavc.tenstudiosbc.my.id/";
-            // Using standard SDK scopes. Discord prefers rpc.activities.write for Embedded Apps
-            const DISCORD_SCOPES = ["identify", "rpc", "rpc.activities.write"]; 
+            // Updated to exactly match the boxes checked in your Developer Portal!
+            const DISCORD_SCOPES = ["identify", "rpc", "activities.write"]; 
             
             // Get authorization code from URL
             function getAuthorizationCode() {
