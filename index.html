@@ -15,7 +15,8 @@
             // Discord OAuth Configuration
             const DISCORD_CLIENT_ID = "1451436398241513553";
             const DISCORD_REDIRECT_URI = "https://gamessiavc.tenstudiosbc.my.id/";
-            const DISCORD_SCOPES = ["identify", "rpc", "activities.write"];
+            // Using standard SDK scopes. Discord prefers rpc.activities.write for Embedded Apps
+            const DISCORD_SCOPES = ["identify", "rpc", "rpc.activities.write"]; 
             
             // Get authorization code from URL
             function getAuthorizationCode() {
@@ -33,33 +34,61 @@
                 try {
                     const authCode = getAuthorizationCode();
                     
-                    // If we have an auth code, clean the URL immediately
+                    // If we have an auth code from the external link, clean the URL immediately to prevent scope looping
                     if (authCode) {
                         localStorage.setItem('discord_auth_code', authCode);
                         window.history.replaceState({}, document.title, DISCORD_REDIRECT_URI);
-                        console.log("Discord authorization stored");
+                        console.log("Browser OAuth Code captured and URL cleaned.");
                     }
                     
                     // Check if Discord SDK is available
                     if (typeof window.discord !== 'undefined') {
                         const discordSdk = new window.discord.DiscordSDK(DISCORD_CLIENT_ID);
                         
-                        // For Discord Activity context
-                        if (isDiscordActivity()) {
-                            console.log("Running in Discord Activity context");
+                        await discordSdk.ready();
+                        console.log("SSIA: Vanguard Chronicles - Discord SDK Ready");
+
+                        // For Discord Activity context - Request Permissions
+                        if (isDiscordActivity() || document.referrer.includes('discord.com')) {
+                            console.log("Running in Discord Activity context. Requesting scopes...");
+                            
+                            try {
+                                // This triggers the Authorize popup inside Discord
+                                const auth = await discordSdk.commands.authenticate({
+                                    scope: DISCORD_SCOPES,
+                                });
+                                
+                                console.log("Authentication Successful! Access Token Acquired.");
+                                
+                                // Optional: Fetch user data to prove it works
+                                const userResponse = await fetch(`https://discord.com/api/v10/users/@me`, {
+                                    headers: {
+                                        Authorization: `Bearer ${auth.access_token}`,
+                                        'Content-Type': 'application/json',
+                                    },
+                                });
+                                
+                                if (userResponse.ok) {
+                                    const user = await userResponse.json();
+                                    console.log(`Welcome to SSIA, ${user.username}!`);
+                                    // You can store this in a global variable for RPG Maker to use later
+                                    window.discordUser = user; 
+                                }
+
+                            } catch (authError) {
+                                console.warn("Discord Scope/Auth Error. Make sure boxes are checked in Developer Portal:", authError);
+                            }
                         } else {
-                            console.log("Running in normal browser context");
+                            console.log("Running in normal browser context. Waiting for player to start.");
                         }
                         
-                        await discordSdk.ready();
-                        console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
                         window.discordSdk = discordSdk;
                     } else {
                         console.log("Discord SDK not available - running in normal browser mode");
                     }
                 } catch (error) {
                     console.warn("Discord initialization warning:", error.message);
-                    // Continue anyway - don't block the game
+                    // Continue anyway - don't block the game from loading
                 }
             }
 
