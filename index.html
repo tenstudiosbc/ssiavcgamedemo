@@ -26,6 +26,15 @@
             // Initialize Discord after SDK is ready
             async function startDiscord() {
                 try {
+                    const authCode = getAuthorizationCode();
+                    
+                    // If we have an auth code, clean the URL immediately
+                    if (authCode) {
+                        // Store the code and clean URL before doing anything else
+                        localStorage.setItem('discord_auth_code', authCode);
+                        window.history.replaceState({}, document.title, DISCORD_REDIRECT_URI);
+                    }
+                    
                     // Wait for the discord object to be available
                     let attempts = 0;
                     const maxAttempts = 15;
@@ -44,24 +53,16 @@
                     // Initialize using the global 'discord' object
                     const discordSdk = new window.discord.DiscordSDK(DISCORD_CLIENT_ID);
                     
-                    // Check if we have an authorization code
-                    const authCode = getAuthorizationCode();
-                    
                     if (authCode) {
-                        console.log("Authorization code found, user authorized");
+                        // User is authorized, initialize and proceed to game
+                        console.log("User authorized with Discord");
                         await discordSdk.ready();
                         console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
-                        
-                        // Store the code (you can send this to your backend to exchange for a token)
-                        localStorage.setItem('discord_auth_code', authCode);
-                        
-                        // Clean up URL
-                        window.history.replaceState({}, document.title, DISCORD_REDIRECT_URI);
+                        // Game will now load normally from the cleaned URL
                     } else {
-                        console.log("No authorization code found. User needs to authorize.");
-                        // Redirect to Discord authorization
+                        // No auth code, redirect to Discord authorization
+                        console.log("No authorization found. Redirecting to Discord authorization...");
                         const authUrl = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&scope=${DISCORD_SCOPES.join('+')}`;
-                        console.log("Redirecting to Discord authorization...");
                         window.location.href = authUrl;
                     }
                     
