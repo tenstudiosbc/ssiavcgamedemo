@@ -9,25 +9,49 @@
         <link rel="apple-touch-icon" href="icon/icon.png">
         <link rel="stylesheet" type="text/css" href="fonts/gamefont.css">
         
-        <!-- Updated to the specific web distribution path to prevent 'require' errors -->
-        <script src="https://unpkg.com/@discord/embedded-app-sdk@1.9.0/dist/index.js"></script>
-
+        <!-- Discord Embedded App SDK -->
         <script>
-            // We use a helper to ensure 'discord' global is ready
-            async function startDiscord() {
-                // Wait for the Discord SDK to load with multiple retry attempts
-                let attempts = 0;
-                const maxAttempts = 10;
-                
-                while (typeof window.discord === 'undefined' && attempts < maxAttempts) {
-                    console.log("Waiting for Discord SDK to load...");
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    attempts++;
-                }
+            // Load Discord SDK dynamically with error handling
+            function loadDiscordSDK() {
+                return new Promise((resolve) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/@discord/embedded-app-sdk@1.9.0/dist/index.js';
+                    script.async = true;
+                    script.onload = () => {
+                        console.log("Discord SDK script loaded successfully");
+                        resolve(true);
+                    };
+                    script.onerror = () => {
+                        console.error("Failed to load Discord SDK from CDN");
+                        resolve(false);
+                    };
+                    document.head.appendChild(script);
+                });
+            }
 
+            // Initialize Discord after SDK is ready
+            async function startDiscord() {
                 try {
+                    // Load the Discord SDK
+                    const sdkLoaded = await loadDiscordSDK();
+                    
+                    if (!sdkLoaded) {
+                        console.warn("Discord SDK unavailable, continuing without it");
+                        return;
+                    }
+                    
+                    // Wait for the discord object to be available
+                    let attempts = 0;
+                    const maxAttempts = 15;
+                    
+                    while (typeof window.discord === 'undefined' && attempts < maxAttempts) {
+                        console.log("Waiting for Discord SDK to initialize...");
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+
                     if (typeof window.discord === 'undefined') {
-                        console.error("Discord SDK failed to load after retries");
+                        console.warn("Discord SDK object not available after retries");
                         return;
                     }
                     
@@ -37,13 +61,12 @@
                     await discordSdk.ready();
                     console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
                     
-                    // You can now use discordSdk.commands for authorization later
                 } catch (error) {
-                    console.error("Discord SDK failed to initialize:", error);
+                    console.error("Discord initialization error:", error);
                 }
             }
 
-            // Delay startup to ensure all scripts are loaded
+            // Start Discord initialization when DOM is ready
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', startDiscord);
             } else {
