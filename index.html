@@ -9,37 +9,12 @@
         <link rel="apple-touch-icon" href="icon/icon.png">
         <link rel="stylesheet" type="text/css" href="fonts/gamefont.css">
         
-        <!-- Discord Embedded App SDK -->
+        <!-- Discord Embedded App SDK (Local) -->
+        <script type="text/javascript" src="js/libs/discord-sdk.js"></script>
         <script>
-            // Load Discord SDK dynamically with error handling
-            function loadDiscordSDK() {
-                return new Promise((resolve) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://unpkg.com/@discord/embedded-app-sdk@1.9.0/dist/index.js';
-                    script.async = true;
-                    script.onload = () => {
-                        console.log("Discord SDK script loaded successfully");
-                        resolve(true);
-                    };
-                    script.onerror = () => {
-                        console.error("Failed to load Discord SDK from CDN");
-                        resolve(false);
-                    };
-                    document.head.appendChild(script);
-                });
-            }
-
             // Initialize Discord after SDK is ready
             async function startDiscord() {
                 try {
-                    // Load the Discord SDK
-                    const sdkLoaded = await loadDiscordSDK();
-                    
-                    if (!sdkLoaded) {
-                        console.warn("Discord SDK unavailable, continuing without it");
-                        return;
-                    }
-                    
                     // Wait for the discord object to be available
                     let attempts = 0;
                     const maxAttempts = 15;
@@ -55,7 +30,7 @@
                         return;
                     }
                     
-                    // Initialize using the global 'discord' object provided by the CDN
+                    // Initialize using the global 'discord' object
                     const discordSdk = new window.discord.DiscordSDK("1451436398241513553");
                     
                     await discordSdk.ready();
