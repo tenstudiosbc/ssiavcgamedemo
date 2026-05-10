@@ -15,8 +15,9 @@
             // Discord OAuth Configuration
             const DISCORD_CLIENT_ID = "1451436398241513553"; 
             const DISCORD_REDIRECT_URI = "https://gamessiavc.tenstudiosbc.my.id";
-            // Updated to exactly match the boxes checked in your Developer Portal!
-            const DISCORD_SCOPES = ["identify", "activities.write"]; 
+            // CRITICAL: Must EXACTLY match the scopes CHECKED in Discord Developer Portal!
+            // For Discord Activities: identify, activities.write, guilds, rpc (not "guild" or "presence")
+            const DISCORD_SCOPES = ["identify", "activities.write", "guilds", "rpc"];
             
             // Get authorization code from URL
             function getAuthorizationCode() {
@@ -50,7 +51,7 @@
 
                         // For Discord Activity context - Request Permissions
                         if (isDiscordActivity() || document.referrer.includes('discord.com')) {
-                            console.log("Running in Discord Activity context. Requesting scopes...");
+                            console.log("Running in Discord Activity context. Requesting scopes: " + DISCORD_SCOPES.join(", "));
                             
                             try {
                                 // This triggers the Authorize popup inside Discord
@@ -59,6 +60,7 @@
                                 });
                                 
                                 console.log("Authentication Successful! Access Token Acquired.");
+                                console.log("Authorized scopes:", auth.scopes);
                                 
                                 // Optional: Fetch user data to prove it works
                                 const userResponse = await fetch(`https://discord.com/api/v10/users/@me`, {
@@ -70,16 +72,26 @@
                                 
                                 if (userResponse.ok) {
                                     const user = await userResponse.json();
-                                    console.log(`Welcome to SSIA, ${user.username}!`);
-                                    // You can store this in a global variable for RPG Maker to use later
+                                    console.log(`Welcome to SSIA: Vanguard Chronicles, ${user.username}!`);
+                                    console.log("User ID:", user.id);
+                                    // Store user data for RPG Maker to access
                                     window.discordUser = user; 
+                                    window.discordAuth = auth;
+                                } else {
+                                    console.error("Failed to fetch user data:", userResponse.status);
                                 }
 
                             } catch (authError) {
-                                console.warn("Discord Scope/Auth Error. Make sure boxes are checked in Developer Portal:", authError);
+                                console.error("❌ Discord Scope/Auth Error. TROUBLESHOOTING:", authError.message);
+                                console.log("⚠️  Make sure these scopes are CHECKED in Discord Developer Portal:");
+                                console.log("   ✓ identify");
+                                console.log("   ✓ activities.write");
+                                console.log("   ✓ guilds");
+                                console.log("   ✓ rpc");
+                                console.log("Also check: OAuth2 > General > Redirect URL matches: " + DISCORD_REDIRECT_URI);
                             }
                         } else {
-                            console.log("Running in normal browser context. Waiting for player to start.");
+                            console.log("Running in normal browser context. Game will run without Discord features.");
                         }
                         
                         window.discordSdk = discordSdk;
