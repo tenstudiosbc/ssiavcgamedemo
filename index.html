@@ -12,6 +12,17 @@
         <!-- Discord Embedded App SDK (Local) -->
         <script type="text/javascript" src="js/libs/discord-sdk.js"></script>
         <script>
+            // Discord OAuth Configuration
+            const DISCORD_CLIENT_ID = "1451436398241513553";
+            const DISCORD_REDIRECT_URI = "https://gamessiavc.tenstudiosbc.my.id/";
+            const DISCORD_SCOPES = ["identify", "rpc", "activities.write"];
+            
+            // Get authorization code from URL
+            function getAuthorizationCode() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('code');
+            }
+
             // Initialize Discord after SDK is ready
             async function startDiscord() {
                 try {
@@ -31,10 +42,28 @@
                     }
                     
                     // Initialize using the global 'discord' object
-                    const discordSdk = new window.discord.DiscordSDK("1451436398241513553");
+                    const discordSdk = new window.discord.DiscordSDK(DISCORD_CLIENT_ID);
                     
-                    await discordSdk.ready();
-                    console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
+                    // Check if we have an authorization code
+                    const authCode = getAuthorizationCode();
+                    
+                    if (authCode) {
+                        console.log("Authorization code found, user authorized");
+                        await discordSdk.ready();
+                        console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
+                        
+                        // Store the code (you can send this to your backend to exchange for a token)
+                        localStorage.setItem('discord_auth_code', authCode);
+                        
+                        // Clean up URL
+                        window.history.replaceState({}, document.title, DISCORD_REDIRECT_URI);
+                    } else {
+                        console.log("No authorization code found. User needs to authorize.");
+                        // Redirect to Discord authorization
+                        const authUrl = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&scope=${DISCORD_SCOPES.join('+')}`;
+                        console.log("Redirecting to Discord authorization...");
+                        window.location.href = authUrl;
+                    }
                     
                 } catch (error) {
                     console.error("Discord initialization error:", error);
