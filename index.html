@@ -15,15 +15,24 @@
         <script>
             // We use a helper to ensure 'discord' global is ready
             async function startDiscord() {
-                // Wait for the script to actually attach the 'discord' object to the window
-                if (typeof discord === 'undefined') {
+                // Wait for the Discord SDK to load with multiple retry attempts
+                let attempts = 0;
+                const maxAttempts = 10;
+                
+                while (typeof window.discord === 'undefined' && attempts < maxAttempts) {
                     console.log("Waiting for Discord SDK to load...");
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    attempts++;
                 }
 
                 try {
+                    if (typeof window.discord === 'undefined') {
+                        console.error("Discord SDK failed to load after retries");
+                        return;
+                    }
+                    
                     // Initialize using the global 'discord' object provided by the CDN
-                    const discordSdk = new discord.DiscordSDK("1451436398241513553");
+                    const discordSdk = new window.discord.DiscordSDK("1451436398241513553");
                     
                     await discordSdk.ready();
                     console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
@@ -34,7 +43,12 @@
                 }
             }
 
-            startDiscord();
+            // Delay startup to ensure all scripts are loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startDiscord);
+            } else {
+                startDiscord();
+            }
         </script>
 
         <title>SSIA: Vanguard Chronicles</title>
