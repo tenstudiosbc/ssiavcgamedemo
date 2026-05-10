@@ -8,19 +8,34 @@
         <link rel="icon" href="icon/icon.png" type="image/png">
         <link rel="apple-touch-icon" href="icon/icon.png">
         <link rel="stylesheet" type="text/css" href="fonts/gamefont.css">
-        <script src="https://unpkg.com/@discord/embedded-app-sdk"></script>
+        
+        <!-- Updated to the specific web distribution path to prevent 'require' errors -->
+        <script src="https://unpkg.com/@discord/embedded-app-sdk@1.9.0/dist/index.js"></script>
 
-<script>
-  // Initialize the SDK
-  const discordSdk = new discord.DiscordSDK("1451436398241513553");
+        <script>
+            // We use a helper to ensure 'discord' global is ready
+            async function startDiscord() {
+                // Wait for the script to actually attach the 'discord' object to the window
+                if (typeof discord === 'undefined') {
+                    console.log("Waiting for Discord SDK to load...");
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
 
-  async function initializeDiscord() {
-    await discordSdk.ready();
-    console.log("Discord Activity is ready");
-  }
+                try {
+                    // Initialize using the global 'discord' object provided by the CDN
+                    const discordSdk = new discord.DiscordSDK("1451436398241513553");
+                    
+                    await discordSdk.ready();
+                    console.log("SSIA: Vanguard Chronicles - Discord Activity Connected");
+                    
+                    // You can now use discordSdk.commands for authorization later
+                } catch (error) {
+                    console.error("Discord SDK failed to initialize:", error);
+                }
+            }
 
-  initializeDiscord();
-</script>
+            startDiscord();
+        </script>
 
         <title>SSIA: Vanguard Chronicles</title>
     </head>
